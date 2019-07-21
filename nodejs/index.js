@@ -59,6 +59,32 @@ var notifyReport = function (result, callback) {
     }
 };
 
+exports.setWebhook = function (event, context, callback) {
+    var telegramConfig = config.get('telegram');
+    var response = {};
+    var option = {
+        uri: `https://api.telegram.org/${telegramConfig.bot_id}:${telegramConfig.token}/setWebhook`,
+        method: 'GET',
+        json: true,
+        qs: {
+            'url': telegramConfig.url,
+        }
+    };
+
+    req(option, function (err, res, body) {
+        console.log(body);
+        if (callback) {
+            callback(err, {
+                "statusCode": 200,
+                "headers": {
+                },
+                "body": JSON.stringify(response),
+                "isBase64Encoded": false
+            });
+        }
+    });
+}
+
 exports.handler = function (event, context, callback) {
     var telegramConfig = config.get('telegram');
     var update = JSON.parse(event.body);
@@ -78,12 +104,14 @@ exports.handler = function (event, context, callback) {
         if (!err) {
             console.log(JSON.stringify(res));
         }
-        callback(null, {
-            "statusCode": 200,
-            "headers": {
-            },
-            "body": JSON.stringify(response),
-            "isBase64Encoded": false
-        });
+        if (callback) {
+            callback(err, {
+                "statusCode": 200,
+                "headers": {
+                },
+                "body": JSON.stringify(response),
+                "isBase64Encoded": false
+            });
+        }
     });
 };
