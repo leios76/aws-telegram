@@ -23,10 +23,6 @@ var req = request.defaults({
     //encoding: null
 });
 
-var captchaId = '';
-var saltValue = '';
-var loginToken = '';
-
 var start = function (callback) {
     callback(null, {
         data: {
@@ -64,16 +60,30 @@ var notifyReport = function (result, callback) {
 };
 
 exports.handler = function (event, context, callback) {
-    var updates = JSON.parse(event.body);
+    var telegramConfig = config.get('telegram');
+    var update = JSON.parse(event.body);
     var response = {};
 
+    update.bot_id = telegramConfig.bot_id;
+    update.timestamp = Math.floor(Date.now() / 1000);
+    update.ttl = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
 
+    var putParams = {
+        TableName: 'telegram',
+        Item: update,
+    };
 
-    callback(null, {
-        "statusCode": 200,
-        "headers": {
-        },
-        "body": JSON.stringify(response),
-        "isBase64Encoded": false
+    console.log("Saving Update");
+    docClient.put(putParams, (err, res) => {
+        if (!err) {
+            console.log(JSON.stringify(res));
+        }
+        callback(null, {
+            "statusCode": 200,
+            "headers": {
+            },
+            "body": JSON.stringify(response),
+            "isBase64Encoded": false
+        });
     });
 };
