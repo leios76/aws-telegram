@@ -64,5 +64,16 @@ var notifyReport = function (result, callback) {
 };
 
 exports.handler = function (event, context, callback) {
-    console.log({event, context});
+    var updates = JSON.parse(event.body);
+    var response = {};
+
+
+
+    callback(null, {
+        "statusCode": 200,
+        "headers": {
+        },
+        "body": JSON.stringify(response),
+        "isBase64Encoded": false
+    });
 };
