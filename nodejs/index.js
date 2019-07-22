@@ -56,7 +56,7 @@ var setWebhook = function (result, callback) {
         method: 'GET',
         json: true,
         qs: {
-            'url': telegramConfig.url,
+            'url': telegramConfig.api_url + '/service/webhook',
         }
     };
 
@@ -116,6 +116,9 @@ var saveMessage = function (update, response, callback) {
 };
 
 var processMessage = function (update, response, callback) {
+    if (update.message) {
+        console.log(`${update.message.from.last_name} ${update.message.from.first_name}(${update.message.from.username}): ${update.message.text}`);
+    }
     callback(null, "", 0);
 };
 
