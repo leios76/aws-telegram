@@ -23,16 +23,6 @@ var req = request.defaults({
     //encoding: null
 });
 
-var start = function (callback) {
-    callback(null, {
-        data: {
-            items: [],
-        },
-        message: "",
-        loggedIn: false,
-    });
-};
-
 var notifyReport = function (result, callback) {
     if (result.message.length > 0) {
         var telegramConfig = config.get('telegram');
@@ -59,7 +49,11 @@ var notifyReport = function (result, callback) {
     }
 };
 
-exports.setWebhook = function (event, context, callback) {
+var start = function (callback) {
+    callback(null, {});
+};
+
+var setWebhook = function (result, callback) {
     var telegramConfig = config.get('telegram');
     var response = {};
     var option = {
@@ -73,15 +67,48 @@ exports.setWebhook = function (event, context, callback) {
 
     req(option, function (err, res, body) {
         console.log(body);
-        if (callback) {
-            callback(err, {
-                "statusCode": 200,
-                "headers": {
-                },
-                "body": JSON.stringify(response),
-                "isBase64Encoded": false
-            });
-        }
+        callback(err, body.result);
+    });
+}
+
+var getWebhookInfo = function (result, callback) {
+    var telegramConfig = config.get('telegram');
+    var response = {};
+    var option = {
+        uri: `https://api.telegram.org/${telegramConfig.bot_id}:${telegramConfig.token}/getWebhookInfo`,
+        method: 'GET',
+        json: true,
+    };
+
+    req(option, function (err, res, body) {
+        console.log(body);
+        callback(err, body.result);
+    });
+}
+
+var deleteWebhook = function (result, callback) {
+    var telegramConfig = config.get('telegram');
+    var response = {};
+    var option = {
+        uri: `https://api.telegram.org/${telegramConfig.bot_id}:${telegramConfig.token}/deleteWebhook`,
+        method: 'GET',
+        json: true,
+    };
+
+    req(option, function (err, res, body) {
+        console.log(body);
+        callback(err, body.result);
+    });
+}
+
+exports.webhook = function (event, context, callback) {
+    async.waterfall([
+        start,
+        getWebhookInfo,
+        deleteWebhook,
+        setWebhook,
+        getWebhookInfo,
+    ], function(err) {
     });
 }
 
