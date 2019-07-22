@@ -23,26 +23,16 @@ var req = request.defaults({
     //encoding: null
 });
 
-var start = function (callback) {
-    callback(null, {
-        data: {
-            items: [],
-        },
-        message: "",
-        loggedIn: false,
-    });
-};
-
-var notifyReport = function (result, callback) {
-    if (result.message.length > 0) {
+var sendMessage = function (message, chat_id, callback) {
+    if (message.length > 0) {
         var telegramConfig = config.get('telegram');
         var option = {
             uri: `https://api.telegram.org/${telegramConfig.bot_id}:${telegramConfig.token}/sendMessage`,
             method: 'POST',
             json: true,
             body: {
-                'chat_id': telegramConfig.chat_id,
-                'text': result.message
+                'chat_id': chat_id,
+                'text': message
             }
         };
 
@@ -59,10 +49,60 @@ var notifyReport = function (result, callback) {
     }
 };
 
-exports.handler = function (event, context, callback) {
+var start = function (callback) {
+    callback(null, {});
+};
+
+var setWebhook = function (result, callback) {
     var telegramConfig = config.get('telegram');
-    var update = JSON.parse(event.body);
     var response = {};
+    var option = {
+        uri: `https://api.telegram.org/${telegramConfig.bot_id}:${telegramConfig.token}/setWebhook`,
+        method: 'GET',
+        json: true,
+        qs: {
+            'url': telegramConfig.url,
+        }
+    };
+
+    req(option, function (err, res, body) {
+        console.log(body);
+        callback(err, body.result);
+    });
+}
+
+var getWebhookInfo = function (result, callback) {
+    var telegramConfig = config.get('telegram');
+    var response = {};
+    var option = {
+        uri: `https://api.telegram.org/${telegramConfig.bot_id}:${telegramConfig.token}/getWebhookInfo`,
+        method: 'GET',
+        json: true,
+    };
+
+    req(option, function (err, res, body) {
+        console.log(body);
+        callback(err, body.result);
+    });
+}
+
+var deleteWebhook = function (result, callback) {
+    var telegramConfig = config.get('telegram');
+    var response = {};
+    var option = {
+        uri: `https://api.telegram.org/${telegramConfig.bot_id}:${telegramConfig.token}/deleteWebhook`,
+        method: 'GET',
+        json: true,
+    };
+
+    req(option, function (err, res, body) {
+        console.log(body);
+        callback(err, body.result);
+    });
+}
+
+var saveMessage = function (update, response, callback) {
+    var telegramConfig = config.get('telegram');
 
     update.bot_id = telegramConfig.bot_id;
     update.timestamp = Math.floor(Date.now() / 1000);
@@ -78,7 +118,41 @@ exports.handler = function (event, context, callback) {
         if (!err) {
             console.log(JSON.stringify(res));
         }
-        callback(null, {
+        callback(err, event, response);
+    });
+};
+
+var processMessage = function (event, callback) {
+    callback(null, event, response);
+};
+
+exports.webhook = function (event, context, callback) {
+    async.waterfall([
+        start,
+        getWebhookInfo,
+        deleteWebhook,
+        setWebhook,
+        getWebhookInfo,
+    ], function (err) {
+        if (err) {
+            console.log(err);
+        }
+    });
+}
+
+exports.handler = function (event, context, callback) {
+    async.waterfall([
+        function (callback) {
+            callback(null, JSON.parse(event.body), {});
+        },
+        saveMessage,
+        processMessage,
+    ], function (err, update, response) {
+        if (err) {
+            console.log(err);
+        }
+
+        callback(err, {
             "statusCode": 200,
             "headers": {
             },
