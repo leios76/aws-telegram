@@ -109,6 +109,9 @@ exports.webhook = function (event, context, callback) {
         setWebhook,
         getWebhookInfo,
     ], function(err) {
+        if (err) {
+            console.log(err);
+        }
     });
 }
 
