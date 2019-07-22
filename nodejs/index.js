@@ -118,12 +118,12 @@ var saveMessage = function (update, response, callback) {
         if (!err) {
             console.log(JSON.stringify(res));
         }
-        callback(err, event, response);
+        callback(err, update, response);
     });
 };
 
-var processMessage = function (event, callback) {
-    callback(null, event, response);
+var processMessage = function (update, callback) {
+    callback(null, update, response);
 };
 
 exports.webhook = function (event, context, callback) {
