@@ -49,10 +49,6 @@ var sendMessage = function (message, chat_id, callback) {
     }
 };
 
-var start = function (callback) {
-    callback(null, {});
-};
-
 var setWebhook = function (result, callback) {
     var telegramConfig = config.get('telegram');
     var response = {};
@@ -128,7 +124,9 @@ var processMessage = function (update, response, callback) {
 
 exports.webhook = function (event, context, callback) {
     async.waterfall([
-        start,
+        function (callback) {
+            callback(null, {});
+        },
         getWebhookInfo,
         deleteWebhook,
         setWebhook,
@@ -136,6 +134,9 @@ exports.webhook = function (event, context, callback) {
     ], function (err) {
         if (err) {
             console.log(err);
+        }
+        if (callback) {
+            callback(err);
         }
     });
 }
