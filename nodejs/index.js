@@ -122,7 +122,7 @@ var saveMessage = function (update, response, callback) {
     });
 };
 
-var processMessage = function (update, callback) {
+var processMessage = function (update, response, callback) {
     callback(null, update, response);
 };
 
