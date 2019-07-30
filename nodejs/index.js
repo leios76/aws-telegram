@@ -117,24 +117,21 @@ var saveMessage = function (update, response, callback) {
     });
 };
 
-var getProductId = function (item) {
-    if (item.title.indexOf("컬쳐랜드") > -1) {
-        return "컬쳐랜드";
-    }
-    if (item.title.indexOf("해피머니") > -1) {
-        return "해피머니";
-    }
-    if (item.title.indexOf("도서문화상품권") > -1) {
-        return "도서문화상품권";
-    }
-    if (item.title.indexOf("롯데") > -1) {
-        return "롯데";
-    }
-    if (item.title.indexOf("신세계") > -1) {
-        return "신세계";
-    }
+var traceProducts = [
+    "컬쳐랜드",
+    "해피머니",
+    "도서문화상품권",
+    "롯데",
+    "신세계",
+];
 
-    return "";
+var getProductId = function (item) {
+    for (var i = 0; i < traceProducts.length; i++) {
+        if (item.title.indexOf(traceProducts[i]) > -1) {
+            return traceProducts[i];
+        }
+    }
+    return null;
 };
 
 var getStatistics = function (item, callback) {
@@ -145,7 +142,7 @@ var getStatistics = function (item, callback) {
         _365d_price: item.price,
     };
 
-    if (productId.length === 0) {
+    if (!productId) {
         callback(lowPrices);
         return;
     }
