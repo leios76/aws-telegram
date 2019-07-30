@@ -23,7 +23,7 @@ fs.readFile("config/event.json", function (err, data) {
 
     var telegramConfig = config.get('telegram');
     var option = {
-        uri: telegramConfig.api_url + '/develop/webhook',
+        uri: telegramConfig.develop_api_url,
         method: 'POST',
         json: true,
         body: JSON.parse(data)
