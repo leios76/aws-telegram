@@ -58,7 +58,7 @@ var setWebhook = function (result, callback) {
         method: 'GET',
         json: true,
         qs: {
-            'url': telegramConfig.api_url + '/service/webhook',
+            'url': telegramConfig.service_api_url,
         }
     };
 
