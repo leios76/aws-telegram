@@ -117,6 +117,8 @@ var saveMessage = function (update, response, callback) {
     });
 };
 
+var statistics;
+
 var traceProducts = [
     "컬쳐랜드",
     "해피머니",
@@ -137,6 +139,7 @@ var getProductId = function (item) {
 var getStatistics = function (item, callback) {
     var productId = getProductId(item);
     var lowPrices = {
+        _latest_price: item.price,
         _007d_price: item.price,
         _030d_price: item.price,
         _365d_price: item.price,
@@ -144,6 +147,11 @@ var getStatistics = function (item, callback) {
 
     if (!productId) {
         callback(lowPrices);
+        return;
+    }
+
+    if (statistics[productId]) {
+        callback(statistics[productId]);
         return;
     }
 
@@ -163,6 +171,10 @@ var getStatistics = function (item, callback) {
             if (res && res.Item && res.Item.data) {
                 data = res.Item.data;
             }
+        }
+
+        if (data.length > 0) {
+            lowPrices._latest_price = data[data.length - 1].price;
         }
 
         lowPrices = data.reduce((prev, curr) => {
@@ -186,6 +198,7 @@ var getStatistics = function (item, callback) {
             }
             return prev;
         }, lowPrices);
+        statistics[productId] = lowPrices;
         callback(lowPrices);
     });
 };
@@ -363,6 +376,7 @@ exports.webhook = function (event, context, callback) {
 
 exports.handler = function (event, context, callback) {
     now = Math.floor(Date.now() / 1000);
+    statistics = {};
 
     async.waterfall([
         function (callback) {
