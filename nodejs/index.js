@@ -2,6 +2,10 @@ const request = require('request');
 const config = require('config');
 const async = require('async');
 const AWS = require('aws-sdk');
+const elec = require('./src/elec.js');
+const giftcard = require('./src/giftcard.js');
+const whooing = require('./src/whooing.js');
+
 AWS.config.update({
     region: 'ap-northeast-2',
     endpoint: "http://dynamodb.ap-northeast-2.amazonaws.com"
@@ -117,211 +121,6 @@ var saveMessage = function (update, response, callback) {
     });
 };
 
-var statistics;
-
-var traceProducts = [
-    "컬쳐랜드",
-    "해피머니 온라인상품권",
-    "도서문화상품권",
-    "롯데",
-    "신세계",
-];
-
-var getProductId = function (item) {
-    for (var i = 0; i < traceProducts.length; i++) {
-        if (item.title.indexOf(traceProducts[i]) > -1) {
-            return traceProducts[i];
-        }
-    }
-    return null;
-};
-
-var getStatistics = function (item, callback) {
-    var productId = getProductId(item);
-    var lowPrices = {
-        _latest_price: item.price,
-        _007d_price: item.price,
-        _030d_price: item.price,
-        _365d_price: item.price,
-    };
-
-    if (!productId) {
-        callback(lowPrices);
-        return;
-    }
-
-    if (statistics[productId]) {
-        callback(statistics[productId]);
-        return;
-    }
-
-    var getParams = {
-        TableName: 'webdata',
-        Key: {
-            site: productId,
-            timestamp: 0,
-        }
-    };
-
-    console.log(`Get Statistics for ${productId}`);
-    docClient.get(getParams, (err, res) => {
-        var data = [];
-        if (!err) {
-            console.log(JSON.stringify(res));
-            if (res && res.Item && res.Item.data) {
-                data = res.Item.data;
-            }
-        }
-
-        if (data.length > 0) {
-            lowPrices._latest_price = data[data.length - 1].price;
-        }
-
-        lowPrices = data.reduce((prev, curr) => {
-            // 7일 이내 데이터이면
-            if (now < curr.ts + 7 * 24 * 60 * 60) {
-                if (curr.price < prev._007d_price) {
-                    prev._007d_price = curr.price;
-                }
-            }
-            // 30일 이내 데이터이면
-            if (now < curr.ts + 30 * 24 * 60 * 60) {
-                if (curr.price < prev._030d_price) {
-                    prev._030d_price = curr.price;
-                }
-            }
-            // 1년 이내 데이터이면
-            if (now < curr.ts + 365 * 24 * 60 * 60) {
-                if (curr.price < prev._365d_price) {
-                    prev._365d_price = curr.price;
-                }
-            }
-            return prev;
-        }, lowPrices);
-        statistics[productId] = lowPrices;
-        callback(lowPrices);
-    });
-};
-
-var processCommandGiftcard = function (update, args, callback) {
-    var message = '';
-    var queryParams = {
-        TableName: 'webdata',
-        KeyConditionExpression: "#site = :site",
-        ScanIndexForward: false,
-        Limit: 1,
-        ExpressionAttributeNames: {
-            "#site": "site"
-        },
-        ExpressionAttributeValues: {
-            ":site": 'wemakeprice-collect'
-        }
-    };
-    docClient.query(queryParams, (err, res) => {
-        if (!err) {
-            var saved = { items: [] };
-            if (res.Items.length > 0 && res.Items[0].data) {
-                saved = res.Items[0].data;
-            }
-            async.each(saved.items, (item, callback) => {
-                getStatistics(item, (lowPrices) => {
-                    message += `품명: ${item.title}\nURL: ${item.url}\n가격: ${item.price}\n최저가: ${item.lowestPrice}\n주최저가: ${lowPrices._007d_price}\n월최저가: ${lowPrices._030d_price}\n년최저가: ${lowPrices._365d_price}\n\n`;
-                    callback(null);
-                });
-            }, function (err) {
-                sendMessage(message, update.message.chat.id, function (err, result) {
-                    callback(err);
-                });
-            });
-        } else {
-            callback(null);
-        }
-    });
-};
-
-var processCommandElec = function (update, args, callback) {
-    var message = '';
-
-    var options = {
-        "max_discount": 16000,
-        /* 할인요금 최대 한도 */
-        "min_total_charge": 1000,
-        /* 월최저요금 */
-        "discount_rate": 30
-        /* 3자녀이상요금할인율 */
-    };
-
-    var rate_table = [
-        {
-            name: '저압',
-            base: [910, 1600, 7300],
-            rate: [93.3, 187.9, 280.6],
-            minimal_discount: 4000,
-        },
-        {
-            name: '고압',
-            base: [730, 1260, 6060],
-            rate: [78.3, 147.3, 215.6],
-            minimal_discount: 2500,
-        },
-    ]
-
-    var tax = function (p) {
-        return 10 * parseInt((p + Math.round(p * 0.1) + 10 * parseInt(0.037 * p * 0.1, 10)) * 0.1, 10);
-    };
-
-    var calc = function (table, used) {
-        var sum = 0;
-
-        var base_level = parseInt(((used - 1) / 200), 10);
-        var used_level = parseInt(used / 200, 10);
-        var remain = parseInt(used % 200, 10);
-
-        if (base_level > 1) {
-            base_level = 2;
-            used_level = 2;
-            remain = used - 400;
-        }
-
-        for (var i = 0; i < used_level; i++) {
-            sum += 200 * table.rate[i];
-        }
-        sum += remain * table.rate[used_level];
-
-        sum = Math.round(sum) + table.base[base_level];
-
-        if (used < 200) {
-            sum -= table.minimal_discount;
-        }
-
-        sum = Math.max(sum, options.min_total_charge);
-        discounted = sum - Math.min(Math.round(sum * options.discount_rate / 100), options.max_discount);
-
-        return { normal: tax(sum), discount: tax(discounted) };
-    }
-
-
-    if (args.length > 0) {
-        var value = parseInt(args[1]);
-        if (value) {
-            for (var i = 0; i < rate_table.length; i++) {
-                var price = calc(rate_table[i], value);
-
-                message += `${rate_table[i].name} 일반: ${price.normal.toLocaleString()}\n`;
-                message += `${rate_table[i].name} 할인: ${price.discount.toLocaleString()}\n\n`;
-            }
-        } else {
-            message += "사용법: /elec <kWh>";
-        }
-    } else {
-        message += "사용법: /elec <kWh>";
-    }
-
-    sendMessage(message, update.message.chat.id, function (err, result) {
-        callback(err);
-    });
-};
-
 var processMessage = function (update, response, callback) {
     if (update.message) {
         console.log(`${update.message.from.last_name} ${update.message.from.first_name}(${update.message.from.username}): ${update.message.text}`);
@@ -332,10 +131,37 @@ var processMessage = function (update, response, callback) {
                     var args = update.message.text.substring(entity.offset + entity.length).split(' ');
                     switch (update.message.text.substring(entity.offset, entity.offset + entity.length)) {
                         case "/giftcard":
-                            processCommandGiftcard(update, args, callback);
+                            giftcard.processCommand(args, function(message) {
+                                if (message !== null) {
+                                    sendMessage(message, update.message.chat.id, function (err, result) {
+                                        callback(err);
+                                    });
+                                } else {
+                                    callback(null);
+                                }
+                            });
                             break;
                         case "/elec":
-                            processCommandElec(update, args, callback);
+                            elec.processCommand(args, function(message) {
+                                if (message !== null) {
+                                    sendMessage(message, update.message.chat.id, function (err, result) {
+                                        callback(err);
+                                    });
+                                } else {
+                                    callback(null);
+                                }
+                            });
+                            break;
+                        case "/whooing":
+                            whooing.processCommand(args, function(message) {
+                                if (message !== null) {
+                                    sendMessage(message, update.message.chat.id, function (err, result) {
+                                        callback(err);
+                                    });
+                                } else {
+                                    callback(null);
+                                }
+                            });
                             break;
                         default:
                             callback(null);
@@ -376,7 +202,6 @@ exports.webhook = function (event, context, callback) {
 
 exports.handler = function (event, context, callback) {
     now = Math.floor(Date.now() / 1000);
-    statistics = {};
 
     async.waterfall([
         function (callback) {
