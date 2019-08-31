@@ -10,6 +10,8 @@ const comma = require('comma-number');
 const TOKEN_PATH = 'config/whooing_token.json';
 var now;
 var today;
+var start_date;
+var end_date;
 var automated;
 
 function sha1(data) {
@@ -265,9 +267,6 @@ var requestEntries = function (result, callback) {
 
     var ts = Math.floor(Date.now() / 1000);
 
-    var start_date = today.set({day: 1}).minus({month: 2});
-    var end_date = today.set({day: 1}).plus({month: 1, day: -1});
-
     for (var k = parseInt(start_date.toFormat('yyyyMM')); k <= parseInt(end_date.toFormat('yyyyMM')); k++) {
         result.report[k] = {};
     }
@@ -304,14 +303,14 @@ var requestEntries = function (result, callback) {
     });
 };
 
-var filterAccountGroup = function(group_key, map_data) {
+var getGiftcardList = function(assets) {
     var result = {};
     var found = false;
-    var t = parseInt(today.toFormat('yyyyMMdd'));
+    var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
-    for (var key in map_data) {
-        var account = map_data[key];
-        if (key === group_key) {
+    for (var key in assets) {
+        var account = assets[key];
+        if (account.type === 'group' && account.memo.indexOf('상품권한도') > -1) {
             found = true;
             continue;
         }
@@ -330,38 +329,40 @@ var filterAccountGroup = function(group_key, map_data) {
     return result;
 }
 
-var makeResult = function(result, callback) {
-    var giftcard_group_id = 'x173';
-    var giftcard_accounts = filterAccountGroup(giftcard_group_id, result.accounts.assets);
+var getCardList = function(liabilities) {
+    var result = {};
+    var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
-    var creditcard_group_id = 'x78';
-    var creditcard_accounts = filterAccountGroup(creditcard_group_id, result.accounts.liabilities);
-
-    var checkcard_group_id = 'x227';
-    var checkcard_accounts = filterAccountGroup(checkcard_group_id, result.accounts.liabilities);
-
-    for (var key in creditcard_accounts) {
-        for (var k in result.report) {
-            result.report[k][creditcard_accounts[key].title.split('|')[0]] = 0;
+    for (var key in liabilities) {
+        var account = liabilities[key];
+        if (account.category !== 'creditcard' && account.category !== 'checkcard' ) {
+            console.log(account);
+            continue;
         }
-    }
 
-    for (var key in checkcard_accounts) {
+        if (t < account.open_date || account.close_date < t) {
+            continue;
+        }
+        result[key] = account;
+    }
+    return result;
+}
+
+var makeResult = function(result, callback) {
+    var giftcard_accounts = getGiftcardList(result.accounts.assets);
+    var card_accounts = getCardList(result.accounts.liabilities);
+
+    for (var key in card_accounts) {
         for (var k in result.report) {
-            result.report[k][checkcard_accounts[key].title.split('|')[0]] = 0;
+            result.report[k][card_accounts[key].title.split('|')[0]] = 0;
         }
     }
 
     for (var i = 0; i < result.entries.length; i++) {
         var entry = result.entries[i];
-        if (entry.l_account_id in giftcard_accounts && entry.r_account_id in creditcard_accounts) {
+        if (entry.l_account_id in giftcard_accounts && entry.r_account_id in card_accounts) {
             var k = Math.floor(parseInt(entry.entry_date.split('.')[0])/100);
-            result.report[k][creditcard_accounts[entry.r_account_id].title.split('|')[0]] += entry.money;
-        }
-
-        if (entry.l_account_id in giftcard_accounts && entry.r_account_id in checkcard_accounts) {
-            var k = Math.floor(parseInt(entry.entry_date.split('.')[0])/100);
-            result.report[k][checkcard_accounts[entry.r_account_id].title.split('|')[0]] += entry.money;
+            result.report[k][card_accounts[entry.r_account_id].title.split('|')[0]] += entry.money;
         }
     }
     console.log(JSON.stringify(result.report, null, 2));
@@ -385,8 +386,8 @@ exports.make_auth =function(event, context, callback) {
 exports.processCommand = function(args, callback) {
     now = Math.floor(Date.now() / 1000);
     today = luxon.DateTime.local().setZone('Asia/Seoul');
-    lowestPrices = {};
-    statistics = {};
+    start_date = today.set({day: 1}).minus({month: 2});
+    end_date = today.set({day: 1}).plus({month: 1, day: -1});
     automated = true;
 
     async.waterfall([
@@ -407,7 +408,9 @@ exports.processCommand = function(args, callback) {
             for (var month in result.report) {
                 message += `[${month}]\n`;
                 for (var card in result.report[month]) {
-                    message += `${card}: ${comma(result.report[month][card])}\n`;
+                    if (result.report[month][card] > 0) {
+                        message += `${card}: ${comma(result.report[month][card])}\n`;
+                    }
                 }
                 message += `\n`;
             }
