@@ -305,23 +305,14 @@ var requestEntries = function (result, callback) {
 
 var getGiftcardList = function(assets) {
     var result = {};
-    var found = false;
     var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
     for (var key in assets) {
         var account = assets[key];
-        if (account.type === 'group' && account.memo.indexOf('상품권한도') > -1) {
-            found = true;
-            continue;
-        }
-        if (!found) {
-            continue;
-        }
-        if (account.type === 'group') {
-            break;
-        }
-
         if (t < account.open_date || account.close_date < t) {
+            continue;
+        }
+        if (account.memo.indexOf('상품권한도') < 0) {
             continue;
         }
         result[key] = account;
