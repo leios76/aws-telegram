@@ -110,7 +110,7 @@ exports.processCommand = function (args, callback) {
             "#site": "site"
         },
         ExpressionAttributeValues: {
-            ":site": 'wemakeprice-collect'
+            ":site": 'hotdeal-collect'
         }
     };
     docClient.query(queryParams, (err, res) => {
