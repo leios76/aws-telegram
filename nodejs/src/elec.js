@@ -1,5 +1,6 @@
 exports.processCommand = function (args, callback) {
-    var message = '';
+    var result = {};
+    result.message = '';
 
     var options = {
         "max_discount": 16000,
@@ -66,15 +67,15 @@ exports.processCommand = function (args, callback) {
             for (var i = 0; i < rate_table.length; i++) {
                 var price = calc(rate_table[i], value);
 
-                message += `${rate_table[i].name} 일반: ${price.normal.toLocaleString()}\n`;
-                message += `${rate_table[i].name} 할인: ${price.discount.toLocaleString()}\n\n`;
+                result.message += `${rate_table[i].name} 일반: ${price.normal.toLocaleString()}\n`;
+                result.message += `${rate_table[i].name} 할인: ${price.discount.toLocaleString()}\n\n`;
             }
         } else {
-            message += "사용법: /elec <kWh>";
+            result.message += "사용법: /elec <kWh>";
         }
     } else {
-        message += "사용법: /elec <kWh>";
+        result.message += "사용법: /elec <kWh>";
     }
 
-    callback(message);
+    callback(null, result);
 };

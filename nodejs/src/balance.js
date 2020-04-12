@@ -5,14 +5,13 @@ const fs = require('fs');
 const crypto = require('crypto')
 const readline = require('readline');
 const luxon = require('luxon');
-const comma = require('comma-number');
 
 const TOKEN_PATH = 'config/whooing_token.json';
 var now;
 var today;
-var start_date;
 var end_date;
 var automated;
+var term_month = 3;
 
 function sha1(data) {
     return crypto.createHash("sha1").update(data, "binary").digest("hex");
@@ -45,11 +44,12 @@ var start = function (callback) {
             token_secret: "",
             user_id: ""
         },
-        report: {}
+        balance_account_info: null,
+        user: {}
     });
 };
 
-var loadAuth = function(result, callback) {
+var loadAuth = function (result, callback) {
     fs.readFile(TOKEN_PATH, (err, token) => {
         if (!err) {
             console.log('Load token from', TOKEN_PATH);
@@ -178,7 +178,8 @@ var requestUser = function (result, callback) {
                 callback(body.message, result);
                 return;
             } else {
-                console.log(body);
+                //console.log(body);
+                result.user = body.results;
             }
         }
         callback(err, result);
@@ -267,9 +268,6 @@ var requestEntries = function (result, callback) {
 
     var ts = Math.floor(Date.now() / 1000);
 
-    for (var k = parseInt(start_date.toFormat('yyyyMM')); k <= parseInt(end_date.toFormat('yyyyMM')); k++) {
-        result.report[k] = {};
-    }
     var whooingConfig = config.get('whooing');
     var option = {
         uri: 'https://whooing.com/api/entries.json',
@@ -277,9 +275,10 @@ var requestEntries = function (result, callback) {
         json: true,
         qs: {
             "section_id": whooingConfig.section_id,
-            "start_date": start_date.toFormat('yyyyMMdd'),
+            "start_date": end_date.toFormat('yyyyMMdd'),
             "end_date": end_date.toFormat('yyyyMMdd'),
             "limit": 1000,
+            "item": "카드대금*(자동정산)"
         },
         headers: {
             "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
@@ -296,15 +295,168 @@ var requestEntries = function (result, callback) {
                 callback(body.message, result);
                 return;
             } else {
-                result.entries = body.results.rows;
+                result.entries = body.results;
             }
         }
         callback(err, result);
     });
 };
 
-var getGiftcardList = function(assets) {
+var requestBs = function (result, callback) {
+    if (result.access_token.token === "") {
+        callback("Forbidden", result);
+        return;
+    }
+
+    var ts = Math.floor(Date.now() / 1000);
+
+    var whooingConfig = config.get('whooing');
+    var option = {
+        uri: 'https://whooing.com/api/bs.json',
+        method: 'GET',
+        json: true,
+        qs: {
+            "section_id": whooingConfig.section_id,
+            "end_date": end_date.toFormat('yyyyMMdd'),
+        },
+        headers: {
+            "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
+        }
+    };
+
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
+        if (!err) {
+            //console.log(body);
+            if (body.code !== 200) {
+                callback(body.message, result);
+                return;
+            } else {
+                result.bs = body.results;
+            }
+        }
+        callback(err, result);
+    });
+};
+
+var requestUpdateEntry = function (result, entry, callback) {
+    if (result.access_token.token === "") {
+        callback("Forbidden", result);
+        return;
+    }
+
+    var ts = Math.floor(Date.now() / 1000);
+
+    var whooingConfig = config.get('whooing');
+    var option = {
+        uri: `https://whooing.com/api/entries/${entry.entry_id}.json`,
+        method: 'PUT',
+        json: true,
+        form: {
+            "section_id": whooingConfig.section_id,
+            "entry_date": end_date.toFormat('yyyyMMdd'),
+            "l_account": entry.l_account,
+            "l_account_id": entry.l_account_id,
+            "r_account": entry.r_account,
+            "r_account_id": entry.r_account_id,
+            "item": entry.item,
+            "money": entry.money,
+            "memo": entry.memo,
+        },
+        headers: {
+            "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
+        }
+    };
+
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
+        if (!err) {
+            //console.log(body);
+            if (body.code !== 200) {
+                callback(body.message, result);
+                return;
+            } else {
+                console.log(`entry updated: ${entry.item} (${result.accounts.liabilities[entry.l_account_id].title}) => ${entry.money}`);
+            }
+        }
+        callback(err, result);
+    });
+};
+
+var requestInsertEntry = function (result, entry, callback) {
+    if (result.access_token.token === "") {
+        callback("Forbidden", result);
+        return;
+    }
+
+    var ts = Math.floor(Date.now() / 1000);
+
+    var whooingConfig = config.get('whooing');
+    var option = {
+        uri: `https://whooing.com/api/entries.json`,
+        method: 'POST',
+        json: true,
+        form: {
+            "section_id": whooingConfig.section_id,
+            "entry_date": end_date.toFormat('yyyyMMdd'),
+            "l_account": entry.l_account,
+            "l_account_id": entry.l_account_id,
+            "r_account": entry.r_account,
+            "r_account_id": entry.r_account_id,
+            "item": entry.item,
+            "money": entry.money,
+            "memo": entry.memo,
+        },
+        headers: {
+            "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
+        }
+    };
+
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
+        if (!err) {
+            //console.log(body);
+            if (body.code !== 200) {
+                callback(body.message, result);
+                return;
+            } else {
+                console.log(`entry inserted: ${entry.item} (${result.accounts.liabilities[entry.l_account_id].title}) => ${entry.money}`);
+            }
+        }
+        callback(err, result);
+    });
+};
+
+var getCardList = function (liabilities) {
     var result = {};
+    var t = parseInt(end_date.toFormat('yyyyMMdd'));
+
+    for (var key in liabilities) {
+        var account = liabilities[key];
+        if (account.category !== 'creditcard') {
+            continue;
+        }
+
+        if (t < account.open_date || account.close_date < t) {
+            continue;
+        }
+
+        if (account.memo.indexOf('월말자동정산') < 0) {
+            continue;
+        }
+        result[key] = account;
+    }
+    return result;
+}
+
+
+var getBalanceAccountInfo = function (assets, liabilities) {
     var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
     for (var key in assets) {
@@ -312,55 +464,84 @@ var getGiftcardList = function(assets) {
         if (t < account.open_date || account.close_date < t) {
             continue;
         }
-        if (account.memo.indexOf('상품권한도') < 0) {
-            continue;
-        }
-        result[key] = account;
-    }
-    return result;
-}
 
-var getCardList = function(liabilities) {
-    var result = {};
-    var t = parseInt(end_date.toFormat('yyyyMMdd'));
+        if (account.memo.indexOf('카드대금항목') > -1) {
+            return { type: "asset", title: account.title, id: account.account_id };
+        }
+    }
 
     for (var key in liabilities) {
         var account = liabilities[key];
-        if (account.category !== 'creditcard' && account.category !== 'checkcard' ) {
-            console.log(account);
-            continue;
-        }
-
         if (t < account.open_date || account.close_date < t) {
             continue;
         }
-        result[key] = account;
-    }
-    return result;
-}
 
-var makeResult = function(result, callback) {
-    var giftcard_accounts = getGiftcardList(result.accounts.assets);
-    var card_accounts = getCardList(result.accounts.liabilities);
-
-    for (var key in card_accounts) {
-        for (var k in result.report) {
-            result.report[k][card_accounts[key].title.split('|')[0]] = 0;
+        if (account.memo.indexOf('카드대금항목') > -1) {
+            return { type: "liabilities", title: account.title, id: account.account_id };
         }
     }
-
-    for (var i = 0; i < result.entries.length; i++) {
-        var entry = result.entries[i];
-        if (entry.l_account_id in giftcard_accounts && entry.r_account_id in card_accounts) {
-            var k = Math.floor(parseInt(entry.entry_date.split('.')[0])/100);
-            result.report[k][card_accounts[entry.r_account_id].title.split('|')[0]] += entry.money;
-        }
-    }
-    console.log(JSON.stringify(result.report, null, 2));
-    callback(null, result);
+    return null;
 };
 
-exports.make_auth =function(event, context, callback) {
+var updateEntry = function (result, key, callback) {
+    for (var i = 0; i < result.entries.rows.length; i++) {
+        var entry = result.entries.rows[i];
+        if (entry.l_account_id === key && entry.r_account_id === result.balance_account_info.id) {
+            entry.money += result.bs.liabilities.accounts[key];
+            requestUpdateEntry(result, entry, callback);
+            return;
+        }
+    }
+
+    var category = result.accounts.liabilities[key].title.split('|')[0];
+    var entry = {
+        l_account: "liabilities",
+        r_account: result.balance_account_info.type,
+        l_account_id: key,
+        r_account_id: result.balance_account_info.id,
+        item: `카드대금 ${category}(자동정산)`,
+        money: result.bs.liabilities.accounts[key],
+        memo: ''
+    };
+    requestInsertEntry(result, entry, callback);
+};
+
+var updateBalance = function (result, callback) {
+    var creditcard_accounts = getCardList(result.accounts.liabilities);
+    result.balance_account_info = getBalanceAccountInfo(result.accounts.assets, result.accounts.liabilities);
+
+    if (result.balance_account_info === null || creditcard_accounts.length === 0) {
+        console.log("Asset is not defined!");
+        callback(null, result);
+        return;
+    }
+
+    async.mapValuesSeries(creditcard_accounts, function (account, key, callback) {
+        if (result.bs.liabilities.accounts[key] !== 0) {
+            updateEntry(result, key, callback);
+        } else {
+            callback(null);
+        }
+    }, function (err) {
+        callback(err, result);
+    });
+};
+
+var process = function (result, i, callback) {
+    end_date = today.plus({ month: i }).set({ day: -1 });
+    async.waterfall([
+        function (callback) {
+            callback(null, result);
+        },
+        requestEntries,
+        requestBs,
+        updateBalance,
+    ], function (err, result) {
+        callback(err, result);
+    });
+};
+
+exports.make_auth = function (event, context, callback) {
     automated = false;
     async.waterfall([
         start,
@@ -372,40 +553,35 @@ exports.make_auth =function(event, context, callback) {
             console.log(err);
         }
     });
-}
+};
 
-exports.processCommand = function(args, callback) {
-    now = Math.floor(Date.now() / 1000);
+exports.processCommand = function (result, callback) {
     today = luxon.DateTime.local().setZone('Asia/Seoul');
-    start_date = today.set({day: 1}).minus({month: 2});
-    end_date = today.set({day: 1}).plus({month: 1, day: -1});
     automated = true;
 
     async.waterfall([
-        start,
+        function (callback) {
+            callback(null, result);
+        },
         loadAuth,
         requestAuth1,
         requestAuth2,
-        //requestUser,
+        requestUser,
         //requestSections,
         requestAccounts,
-        requestEntries,
-        makeResult,
+        function (result, callback) {
+            async.timesSeries(term_month, function (i, callback) {
+                process(result, (i + 2) - term_month, callback);
+            }, function (err) {
+                callback(err, result);
+            });
+        },
     ], function (err, result) {
-        result.message = "";
         if (err) {
             console.log(err);
         } else {
-            for (var month in result.report) {
-                result.message += `[${month}]\n`;
-                for (var card in result.report[month]) {
-                    if (result.report[month][card] > 0) {
-                        result.message += `${card}: ${comma(result.report[month][card])}\n`;
-                    }
-                }
-                result.message += `\n`;
-            }
+            result.data = { point: result.user.point }
         }
         callback(err, result);
     });
-}
+};
