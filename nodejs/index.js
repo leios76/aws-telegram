@@ -5,6 +5,7 @@ const AWS = require('aws-sdk');
 const elec = require('./src/elec.js');
 const giftcard = require('./src/giftcard.js');
 const whooing = require('./src/whooing.js');
+const balance = require('./src/balance.js');
 
 AWS.config.update({
     region: 'ap-northeast-2',
@@ -131,9 +132,9 @@ var processMessage = function (update, response, callback) {
                     var args = update.message.text.substring(entity.offset + entity.length).split(' ');
                     switch (update.message.text.substring(entity.offset, entity.offset + entity.length)) {
                         case "/giftcard":
-                            giftcard.processCommand(args, function(message) {
-                                if (message !== null) {
-                                    sendMessage(message, update.message.chat.id, function (err, result) {
+                            giftcard.processCommand(args, function(err, result) {
+                                if (err === null && result !== null) {
+                                    sendMessage(result.message, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
                                 } else {
@@ -142,9 +143,9 @@ var processMessage = function (update, response, callback) {
                             });
                             break;
                         case "/elec":
-                            elec.processCommand(args, function(message) {
-                                if (message !== null) {
-                                    sendMessage(message, update.message.chat.id, function (err, result) {
+                            elec.processCommand(args, function(err, result) {
+                                if (err === null && result !== null) {
+                                    sendMessage(result.message, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
                                 } else {
@@ -153,9 +154,20 @@ var processMessage = function (update, response, callback) {
                             });
                             break;
                         case "/whooing":
-                            whooing.processCommand(args, function(message) {
-                                if (message !== null) {
-                                    sendMessage(message, update.message.chat.id, function (err, result) {
+                            whooing.processCommand(args, function(err, result) {
+                                if (err === null && result !== null) {
+                                    sendMessage(result.message, update.message.chat.id, function (err, result) {
+                                        callback(err);
+                                    });
+                                } else {
+                                    callback(null);
+                                }
+                            });
+                            break;
+                        case "/balance":
+                            balance.processCommand(args, function(err, result) {
+                                if (err === null && result !== null) {
+                                    sendMessage(result.user.point, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
                                 } else {

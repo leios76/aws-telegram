@@ -99,8 +99,8 @@ var getStatistics = function (item, callback) {
 exports.processCommand = function (args, callback) {
     statistics = {};
     now = Math.floor(Date.now() / 1000);
-
-    var message = '';
+    var result = {};
+    result.message = '';
     var queryParams = {
         TableName: 'webdata',
         KeyConditionExpression: "#site = :site",
@@ -121,14 +121,14 @@ exports.processCommand = function (args, callback) {
             }
             async.each(saved.items, (item, callback) => {
                 getStatistics(item, (lowPrices) => {
-                    message += `품명: ${item.title}\nURL: ${item.url}\n가격: ${item.price}\n최저가: ${item.lowestPrice}\n주최저가: ${lowPrices._007d_price}\n월최저가: ${lowPrices._030d_price}\n년최저가: ${lowPrices._365d_price}\n\n`;
+                    result.message += `품명: ${item.title}\nURL: ${item.url}\n가격: ${item.price}\n최저가: ${item.lowestPrice}\n주최저가: ${lowPrices._007d_price}\n월최저가: ${lowPrices._030d_price}\n년최저가: ${lowPrices._365d_price}\n\n`;
                     callback(null);
                 });
             }, function (err) {
-                callback(message);
+                callback(err, result);
             });
         } else {
-            callback(null);
+            callback(null, null);
         }
     });
 };
