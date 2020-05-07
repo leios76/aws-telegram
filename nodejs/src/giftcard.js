@@ -120,10 +120,23 @@ exports.processCommand = function (args, callback) {
                 saved = res.Items[0].data;
             }
             async.each(saved.items, (item, callback) => {
-                getStatistics(item, (lowPrices) => {
-                    result.message += `품명: ${item.title}\nURL: ${item.url}\n가격: ${item.price}\n최저가: ${item.lowestPrice}\n주최저가: ${lowPrices._007d_price}\n월최저가: ${lowPrices._030d_price}\n년최저가: ${lowPrices._365d_price}\n\n`;
-                    callback(null);
-                });
+                var percent = 10000;
+                var money_list = [1, 2, 3, 4, 5, 10, 20, 50];
+                var curr_percent = 0;
+                var temp_percent = 0;
+                for (var i = 0; i < money_list.length; i++) {
+                    curr_percent = item.lowestPrice / money_list[i];
+                    if (curr_percent <= 10000) {
+                        percent = curr_percent;
+                        break;
+                    }
+                }
+            
+                if (percent >= 10000) {
+                    result.message += `품명: ${item.title}\nURL: ${item.url}\n가격: ${item.lowestPrice}\n\n`;
+                } else {
+                    result.message += `품명: ${item.title}\nURL: ${item.url}\n가격: ${item.lowestPrice}, ${((10000 - percent)/100).toFixed(2)}%\n\n`;
+                }
             }, function (err) {
                 callback(err, result);
             });
