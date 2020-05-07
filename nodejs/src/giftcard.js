@@ -137,6 +137,7 @@ exports.processCommand = function (args, callback) {
                 } else {
                     result.message += `품명: ${item.title}\nURL: ${item.url}\n가격: ${item.lowestPrice}, ${((10000 - percent)/100).toFixed(2)}%\n\n`;
                 }
+                callback(null);
             }, function (err) {
                 callback(err, result);
             });
