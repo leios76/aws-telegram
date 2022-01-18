@@ -175,6 +175,8 @@ var processMessage = function (update, response, callback) {
                                 }
                             });
                             break;
+                        case "/test":
+                            break;
                         default:
                             callback(null);
                             break;
