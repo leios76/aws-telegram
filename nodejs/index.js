@@ -176,6 +176,9 @@ var processMessage = function (update, response, callback) {
                             });
                             break;
                         case "/test":
+                            sendMessage(result.user.point, update.message.chat.id, function (err, result) {
+                                callback(err);
+                            });
                             break;
                         default:
                             callback(null);
