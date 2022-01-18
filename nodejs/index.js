@@ -219,7 +219,7 @@ exports.handler = function (event, context, callback) {
         function (callback) {
             callback(null, JSON.parse(event.body), {});
         },
-        saveMessage,
+        //saveMessage,
         processMessage,
         sendMessage,
     ], function (err, response) {
