@@ -6,6 +6,7 @@ const elec = require('./src/elec.js');
 const giftcard = require('./src/giftcard.js');
 const whooing = require('./src/whooing.js');
 const balance = require('./src/balance.js');
+const test = require('./src/test.js');
 
 AWS.config.update({
     region: 'ap-northeast-2',
@@ -176,8 +177,14 @@ var processMessage = function (update, response, callback) {
                             });
                             break;
                         case "/test":
-                            sendMessage(result.user.point, update.message.chat.id, function (err, result) {
-                                callback(err);
+                            test.processCommand(args, function(err, result) {
+                                if (err === null && result !== null) {
+                                    sendMessage(result.message, update.message.chat.id, function (err, result) {
+                                        callback(err);
+                                    });
+                                } else {
+                                    callback(null);
+                                }
                             });
                             break;
                         default:
