@@ -1,5 +1,6 @@
 const async = require('async');
 const request = require('request');
+const config = require('config');
 
 const elec = require('./elec.js');
 const giftcard = require('./giftcard.js');

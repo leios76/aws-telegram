@@ -22,6 +22,7 @@ fs.readFile("config/event.json", function (err, data) {
         return;
     }
     event = {};
+    event.path = "/telegram/webhook";
     event.body = data;
     lambda.handler(event, null, function() {
     });
