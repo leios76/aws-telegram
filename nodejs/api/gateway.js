@@ -196,6 +196,8 @@ exports.handler = function (event, context, callback) {
             console.log(err);
         }
 
+        console.log(response);
+
         callback(err, {
             "statusCode": 200,
             "headers": {
