@@ -122,7 +122,7 @@ var processMessage = function (update, response, callback) {
             return;
         }
     } else if (update.callback_query) {
-        sendMessage(update.callback_query.data, '', update.callback_query.from.id, function (err, result) {
+        editMessageMarkup(update.callback_query.from.id, update.callback_query.message.message_id, {}, function(err, result) {
             callback(err);
         });
         return;
@@ -174,6 +174,33 @@ var sendMessage = function (message, markup, chat_id, callback) {
             if (!err && (body && !body.ok)) {
                 console.log(body);
                 callback("Send Message Fail", { result: "nok" });
+            } else {
+                callback(err, { result: "ok" });
+            }
+        });
+    } else {
+        callback(null, { result: "no message" });
+    }
+};
+
+var editMessageMarkup = function (chat_id, message_id, markup, callback) {
+    if (chat_id > 0 && message_id > 0) {
+        var telegramConfig = config.get('telegram');
+        var option = {
+            uri: `https://api.telegram.org/${telegramConfig.bot_id}:${telegramConfig.token}/editMessageReplyMarkup`,
+            method: 'POST',
+            json: true,
+            body: {
+                'chat_id': chat_id,
+                'message_id': message,
+                'reply_markup': markup
+            }
+        };
+
+        req(option, function (err, response, body) {
+            if (!err && (body && !body.ok)) {
+                console.log(body);
+                callback("Edit Message Markup Fail", { result: "nok" });
             } else {
                 callback(err, { result: "ok" });
             }
