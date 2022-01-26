@@ -227,6 +227,9 @@ exports.webhook = function (event, context, callback) {
 exports.handler = function (event, context, callback) {
     now = Math.floor(Date.now() / 1000);
 
+    if (event.path) {
+        console.log(event.path);
+    }
     async.waterfall([
         function (callback) {
             callback(null, JSON.parse(event.body), {});
