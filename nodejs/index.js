@@ -205,6 +205,29 @@ var processMessage = function (update, response, callback) {
     callback(null, "", 0);
 };
 
+var telegramCallback = function (event, context, callback) {
+    async.waterfall([
+        function (callback) {
+            callback(null, JSON.parse(event.body), {});
+        },
+        //saveMessage,
+        processMessage,
+        sendMessage,
+    ], function (err, response) {
+        if (err) {
+            console.log(err);
+        }
+
+        callback(err, {
+            "statusCode": 200,
+            "headers": {
+            },
+            "body": JSON.stringify(response),
+            "isBase64Encoded": false
+        });
+    });
+}
+
 exports.webhook = function (event, context, callback) {
     async.waterfall([
         function (callback) {
@@ -228,26 +251,14 @@ exports.handler = function (event, context, callback) {
     now = Math.floor(Date.now() / 1000);
 
     if (event.path) {
-        console.log(event.path);
-    }
-    async.waterfall([
-        function (callback) {
-            callback(null, JSON.parse(event.body), {});
-        },
-        //saveMessage,
-        processMessage,
-        sendMessage,
-    ], function (err, response) {
-        if (err) {
-            console.log(err);
+        // API gateway
+        if (event.path === "/telegram/webhook") {
+            telegramCallback(event, context, callback);
+        } else {
+            console.log(`Unknown path: ${event.path}`);
         }
-
-        callback(err, {
-            "statusCode": 200,
-            "headers": {
-            },
-            "body": JSON.stringify(response),
-            "isBase64Encoded": false
-        });
-    });
+    } else {
+        // Cloud watch
+        console.log("cloud watch event");
+    }
 };
