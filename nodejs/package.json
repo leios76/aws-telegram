@@ -1,6 +1,6 @@
 {
   "name": "aws-telegram",
-  "version": "9.0.26",
+  "version": "9.0.27",
   "description": "",
   "main": "index.js",
   "scripts": {

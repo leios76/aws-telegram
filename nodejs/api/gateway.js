@@ -122,7 +122,9 @@ var processMessage = function (update, response, callback) {
             return;
         }
     } else if (update.callback_query) {
-        callback(null, { result: "ok" });
+        sendMessage(update.callback_query.data, '', update.message.chat.id, function (err, result) {
+            callback(err);
+        });
         return;
     }
 
