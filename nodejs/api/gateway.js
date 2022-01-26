@@ -192,7 +192,7 @@ var editMessageMarkup = function (chat_id, message_id, markup, callback) {
             json: true,
             body: {
                 'chat_id': chat_id,
-                'message_id': message,
+                'message_id': message_id,
                 'reply_markup': markup
             }
         };
