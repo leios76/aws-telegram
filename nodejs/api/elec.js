@@ -1,6 +1,7 @@
 exports.processCommand = function (args, callback) {
     var result = {};
     result.message = '';
+    result.markup = {};
 
     var options = {
         "max_discount": 16000,

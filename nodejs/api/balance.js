@@ -36,6 +36,7 @@ var start = function (callback) {
             items: [],
         },
         message: "",
+        markup: {},
         loggedIn: false,
         token: "",
         pin: "",

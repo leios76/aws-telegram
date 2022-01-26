@@ -33,7 +33,7 @@ var processMessage = function (update, response, callback) {
                         case "/giftcard":
                             giftcard.processCommand(args, function(err, result) {
                                 if (err === null && result !== null) {
-                                    sendMessage(result.message, update.message.chat.id, function (err, result) {
+                                    sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
                                 } else {
@@ -44,7 +44,7 @@ var processMessage = function (update, response, callback) {
                         case "/elec":
                             elec.processCommand(args, function(err, result) {
                                 if (err === null && result !== null) {
-                                    sendMessage(result.message, update.message.chat.id, function (err, result) {
+                                    sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
                                 } else {
@@ -55,7 +55,7 @@ var processMessage = function (update, response, callback) {
                         case "/whooing":
                             whooing.processCommand(args, function(err, result) {
                                 if (err === null && result !== null) {
-                                    sendMessage(result.message, update.message.chat.id, function (err, result) {
+                                    sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
                                 } else {
@@ -66,7 +66,7 @@ var processMessage = function (update, response, callback) {
                         case "/balance":
                             balance.processCommand(args, function(err, result) {
                                 if (err === null && result !== null) {
-                                    sendMessage(result.user.point, update.message.chat.id, function (err, result) {
+                                    sendMessage(result.user.point, "", update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
                                 } else {
@@ -77,7 +77,7 @@ var processMessage = function (update, response, callback) {
                         case "/test":
                             test.processCommand(args, function(err, result) {
                                 if (err === null && result !== null) {
-                                    sendMessage(result.message, update.message.chat.id, function (err, result) {
+                                    sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
                                 } else {
@@ -102,7 +102,8 @@ var processMessage = function (update, response, callback) {
 
     callback(null, "", 0);
 };
-var sendMessage = function (message, chat_id, callback) {
+
+var sendMessage = function (message, markup, chat_id, callback) {
     if (message.length > 0 && chat_id > 0) {
         var telegramConfig = config.get('telegram');
         var option = {
@@ -111,7 +112,8 @@ var sendMessage = function (message, chat_id, callback) {
             json: true,
             body: {
                 'chat_id': chat_id,
-                'text': message
+                'text': message,
+                'reply_markup': markup
             }
         };
 
@@ -135,7 +137,7 @@ exports.handler = function (event, context, callback) {
         },
         //saveMessage,
         processMessage,
-        sendMessage,
+        //sendMessage,
     ], function (err, response) {
         if (err) {
             console.log(err);

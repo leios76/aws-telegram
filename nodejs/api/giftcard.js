@@ -101,6 +101,7 @@ exports.processCommand = function (args, callback) {
     now = Math.floor(Date.now() / 1000);
     var result = {};
     result.message = '';
+    result.markup = {};
     var queryParams = {
         TableName: 'webdata',
         KeyConditionExpression: "#site = :site",
@@ -131,7 +132,7 @@ exports.processCommand = function (args, callback) {
                         break;
                     }
                 }
-            
+
                 if (percent >= 10000) {
                     result.message += `품명: ${item.title}\nURL: ${item.url}\n가격: ${item.lowestPrice}\n\n`;
                 } else {
