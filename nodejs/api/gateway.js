@@ -1,12 +1,23 @@
 const async = require('async');
 const request = require('request');
 const config = require('config');
+const AWS = require('aws-sdk');
 
 const elec = require('./elec.js');
 const giftcard = require('./giftcard.js');
 const whooing = require('./whooing.js');
 const balance = require('./balance.js');
 const test = require('./test.js');
+
+AWS.config.update({
+    region: 'ap-northeast-2',
+    endpoint: "http://dynamodb.ap-northeast-2.amazonaws.com"
+});
+
+//const dynamodb = new AWS.DynamoDB();
+const docClient = new AWS.DynamoDB.DocumentClient();
+
+var now;
 
 var req = request.defaults({
     headers: {
@@ -22,6 +33,7 @@ var req = request.defaults({
 });
 
 var processMessage = function (update, response, callback) {
+    console.log(update);
     if (update.message) {
         console.log(`${update.message.from.last_name} ${update.message.from.first_name}(${update.message.from.username}): ${update.message.text}`);
         if (!update.message.from.is_bot) {
@@ -103,6 +115,31 @@ var processMessage = function (update, response, callback) {
     callback(null, "", 0);
 };
 
+var saveMessage = function (update, response, callback) {
+    var telegramConfig = config.get('telegram');
+
+    update.bot_id = telegramConfig.bot_id;
+    update.timestamp = now;
+
+    var putParams = {
+        TableName: 'webdata',
+        Item: {
+            site: 'telegram',
+            timestamp: now,
+            ttl: now + 30 * 24 * 60 * 60,
+            data: update
+        }
+    };
+
+    console.log("Saving Update");
+    docClient.put(putParams, (err, res) => {
+        if (!err) {
+            console.log(JSON.stringify(res));
+        }
+        callback(err, update, response);
+    });
+};
+
 var sendMessage = function (message, markup, chat_id, callback) {
     if (message.length > 0 && chat_id > 0) {
         var telegramConfig = config.get('telegram');
@@ -131,11 +168,13 @@ var sendMessage = function (message, markup, chat_id, callback) {
 };
 
 exports.handler = function (event, context, callback) {
+    now = Math.floor(Date.now() / 1000);
+
     async.waterfall([
         function (callback) {
             callback(null, JSON.parse(event.body), {});
         },
-        //saveMessage,
+        saveMessage,
         processMessage,
         //sendMessage,
     ], function (err, response) {

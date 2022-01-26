@@ -1,16 +1,8 @@
 const request = require('request');
 const config = require('config');
 const async = require('async');
-const AWS = require('aws-sdk');
 const apiGateway = require('./api/gateway.js');
 
-AWS.config.update({
-    region: 'ap-northeast-2',
-    endpoint: "http://dynamodb.ap-northeast-2.amazonaws.com"
-});
-
-//const dynamodb = new AWS.DynamoDB();
-const docClient = new AWS.DynamoDB.DocumentClient();
 
 var now;
 
@@ -69,27 +61,6 @@ var deleteWebhook = function (result, callback) {
     req(option, function (err, res, body) {
         console.log(body);
         callback(err, body.result);
-    });
-};
-
-var saveMessage = function (update, response, callback) {
-    var telegramConfig = config.get('telegram');
-
-    update.bot_id = telegramConfig.bot_id;
-    update.timestamp = now;
-    update.ttl = now + 30 * 24 * 60 * 60;
-
-    var putParams = {
-        TableName: 'telegram',
-        Item: update,
-    };
-
-    console.log("Saving Update");
-    docClient.put(putParams, (err, res) => {
-        if (!err) {
-            console.log(JSON.stringify(res));
-        }
-        callback(err, update, response);
     });
 };
 
