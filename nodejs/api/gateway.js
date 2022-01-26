@@ -111,7 +111,7 @@ var sendMessage = function (message, chat_id, callback) {
     }
 };
 
-var handler = function (event, context, callback) {
+exports.handler = function (event, context, callback) {
     async.waterfall([
         function (callback) {
             callback(null, JSON.parse(event.body), {});
