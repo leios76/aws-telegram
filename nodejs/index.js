@@ -2,7 +2,7 @@ const request = require('request');
 const config = require('config');
 const async = require('async');
 const AWS = require('aws-sdk');
-const apiGateway = require('api/gateway.js');
+const apiGateway = require('./api/gateway.js');
 
 AWS.config.update({
     region: 'ap-northeast-2',

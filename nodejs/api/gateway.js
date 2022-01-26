@@ -1,8 +1,8 @@
-const elec = require('elec.js');
-const giftcard = require('giftcard.js');
-const whooing = require('whooing.js');
-const balance = require('balance.js');
-const test = require('test.js');
+const elec = require('./elec.js');
+const giftcard = require('./giftcard.js');
+const whooing = require('./whooing.js');
+const balance = require('./balance.js');
+const test = require('./test.js');
 
 var processMessage = function (update, response, callback) {
     if (update.message) {
