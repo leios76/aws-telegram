@@ -7,6 +7,7 @@ const elec = require('./elec.js');
 const giftcard = require('./giftcard.js');
 const whooing = require('./whooing.js');
 const balance = require('./balance.js');
+const nhis = require('./nhis.js');
 const test = require('./test.js');
 
 AWS.config.update({
@@ -33,7 +34,6 @@ var req = request.defaults({
 });
 
 var processMessage = function (update, response, callback) {
-    console.log(update);
     if (update.message) {
         console.log(`${update.message.from.last_name} ${update.message.from.first_name}(${update.message.from.username}): ${update.message.text}`);
         if (!update.message.from.is_bot) {
@@ -86,6 +86,17 @@ var processMessage = function (update, response, callback) {
                                 }
                             });
                             break;
+                        case "/nhis":
+                            nhis.processCommand(args, function(err, result) {
+                                if (err === null && result !== null) {
+                                    sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
+                                        callback(err);
+                                    });
+                                } else {
+                                    callback(null);
+                                }
+                            });
+                            break;
                         case "/test":
                             test.processCommand(args, function(err, result) {
                                 if (err === null && result !== null) {
@@ -110,6 +121,9 @@ var processMessage = function (update, response, callback) {
 
             return;
         }
+    } else if (update.callback_query) {
+        callback(null, { result: "ok" });
+        return;
     }
 
     callback(null, "", 0);
