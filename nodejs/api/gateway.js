@@ -35,7 +35,7 @@ var req = request.defaults({
 
 var processMessage = function (update, response, callback) {
     if (update.message) {
-        console.log(`${update.message.from.last_name} ${update.message.from.first_name}(${update.message.from.username}): ${update.message.text}`);
+        console.log(`${update.message.from.last_name} ${update.message.from.first_name}(${update.message.from.username}/${update.message.chat.id}): ${update.message.text}`);
         if (!update.message.from.is_bot) {
             async.eachSeries(update.message.entities, function (entity, callback) {
                 console.log("Process entity:", entity);

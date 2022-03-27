@@ -12,6 +12,19 @@ help() {
 MAJOR=`git describe --tags master | cut -d . -f1`
 MINOR=`git describe --tags master | cut -d . -f2`
 BUILD=`git describe --tags master | cut -d . -f3`
+echo ${MAJOR}.${MINOR}.${BUILD}
+if [ -z "${MAJOR}" ]
+then
+    MAJOR=1
+fi
+if [ -z "${MINOR}" ]
+then
+    MINOR=0
+fi
+if [ -z "${BUILD}" ]
+then
+    BUILD=-1
+fi
 RELEASE_VERSION=$(( $MAJOR )).$(( $MINOR )).$(( $BUILD + 1 ))
 
 while getopts "v:mnbh" opt
