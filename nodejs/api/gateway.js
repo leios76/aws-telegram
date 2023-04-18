@@ -44,6 +44,7 @@ var processMessage = function (update, response, callback) {
                     switch (update.message.text.substring(entity.offset, entity.offset + entity.length)) {
                         case "/giftcard":
                             giftcard.processCommand(args, function(err, result) {
+                                console.log(result.message.length);
                                 if (err === null && result !== null && result.message.length < 9000) {
                                     sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
