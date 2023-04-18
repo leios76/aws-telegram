@@ -44,7 +44,7 @@ var processMessage = function (update, response, callback) {
                     switch (update.message.text.substring(entity.offset, entity.offset + entity.length)) {
                         case "/giftcard":
                             giftcard.processCommand(args, function(err, result) {
-                                if (err === null && result !== null) {
+                                if (err === null && result !== null && result.message.length < 9000) {
                                     sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
@@ -55,7 +55,7 @@ var processMessage = function (update, response, callback) {
                             break;
                         case "/elec":
                             elec.processCommand(args, function(err, result) {
-                                if (err === null && result !== null) {
+                                if (err === null && result !== null && result.message.length < 9000) {
                                     sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
@@ -66,7 +66,7 @@ var processMessage = function (update, response, callback) {
                             break;
                         case "/whooing":
                             whooing.processCommand(args, function(err, result) {
-                                if (err === null && result !== null) {
+                                if (err === null && result !== null && result.message.length < 9000) {
                                     sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
@@ -88,7 +88,7 @@ var processMessage = function (update, response, callback) {
                             break;
                         case "/nhis":
                             nhis.processCommand(args, function(err, result) {
-                                if (err === null && result !== null) {
+                                if (err === null && result !== null && result.message.length < 9000) {
                                     sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
@@ -99,7 +99,7 @@ var processMessage = function (update, response, callback) {
                             break;
                         case "/test":
                             test.processCommand(args, function(err, result) {
-                                if (err === null && result !== null) {
+                                if (err === null && result !== null && result.message.length < 9000) {
                                     sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
                                     });
