@@ -76,7 +76,7 @@ exports.processCommand = function (result, callback) {
                             }
 
                             var now = luxon.DateTime.local().setZone('Asia/Seoul');
-                            var created = luxon.DateTime.fromFormat(item.recptnDt, "yyyy-MM-dd hh:mm:ss");
+                            var created = luxon.DateTime.fromFormat(item.recptnDt, "yyyy-MM-dd hh:mm:ss").setZone('Asia/Seoul');
                             var diff = Math.round((now - created)/1000);
                             var remain_sec = parseInt(item.barvlDt) - diff;
                             var remain_str = remain_sec;
