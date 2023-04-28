@@ -3,5 +3,8 @@
 		"bot_id": "",
 		"token": "",
 		"api_url": ""
+	},
+	"dataseoul": {
+		"token": ""
 	}
 }

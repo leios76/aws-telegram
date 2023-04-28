@@ -8,6 +8,7 @@ const giftcard = require('./giftcard.js');
 const whooing = require('./whooing.js');
 const balance = require('./balance.js');
 const nhis = require('./nhis.js');
+const subway = require('./subway.js');
 const test = require('./test.js');
 
 AWS.config.update({
@@ -89,6 +90,17 @@ var processMessage = function (update, response, callback) {
                             break;
                         case "/nhis":
                             nhis.processCommand(args, function(err, result) {
+                                if (err === null && result !== null && result.message.length < 4000) {
+                                    sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
+                                        callback(err);
+                                    });
+                                } else {
+                                    callback(null);
+                                }
+                            });
+                            break;
+                        case "/subway":
+                            subway.processCommand(args, function(err, result) {
                                 if (err === null && result !== null && result.message.length < 4000) {
                                     sendMessage(result.message, result.markup, update.message.chat.id, function (err, result) {
                                         callback(err);
