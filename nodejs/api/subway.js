@@ -80,6 +80,7 @@ exports.processCommand = function (result, callback) {
                             var diff = Math.round((now - created)/1000);
                             var remain_sec = parseInt(item.barvlDt) - diff;
                             var remain_str = remain_sec;
+                            console.log(now.toFormat("yy/MM/dd hh:mm:ss"), created.toFormat("yy/MM/dd hh:mm:ss"));
                             if (remain_sec > 60) {
                                 remain_str = `${Math.floor(remain_sec / 60)}m ${remain_sec % 60}s`
                             }
